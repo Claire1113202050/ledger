@@ -1,0 +1,1647 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <title>日常記帳本 | 個人收支管理</title>
+  <!-- Tailwind CSS -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Google Fonts: Inter & Noto Sans TC -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Noto+Sans+TC:wght@400;500;700&display=swap" rel="stylesheet">
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['Inter', '"Noto Sans TC"', 'sans-serif'],
+          },
+          colors: {
+            brand: {
+              50: '#f0f9ff',
+              100: '#e0f2fe',
+              500: '#0ea5e9',
+              600: '#0284c7',
+              700: '#0369a1',
+            }
+          }
+        }
+      }
+    }
+  </script>
+</head>
+<body class="bg-slate-50 text-slate-800 antialiased min-h-screen pb-16 selection:bg-brand-100 selection:text-brand-700">
+
+  <!-- 頂部導覽與月份切換器 -->
+  <header class="sticky top-0 z-30 bg-white/90 backdrop-blur-md border-b border-slate-200/80 shadow-sm">
+    <div class="max-w-3xl mx-auto px-4 py-3 flex items-center justify-between gap-2">
+      <!-- App 標題 -->
+      <div class="flex items-center gap-2">
+        <div class="w-9 h-9 rounded-xl bg-gradient-to-br from-brand-500 to-indigo-600 flex items-center justify-center text-white shadow-sm">
+          <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.2">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+          </svg>
+        </div>
+        <div>
+          <h1 class="text-base sm:text-lg font-bold text-slate-800 leading-tight">日常記帳本</h1>
+          <p class="text-[11px] text-slate-400 hidden sm:block">離線儲存 · 簡潔理財</p>
+        </div>
+      </div>
+
+      <!-- 月份切換控制 -->
+      <div class="flex items-center bg-slate-100 rounded-xl p-1 border border-slate-200/70">
+        <button id="prevMonthBtn" type="button" aria-label="上個月" class="p-2 rounded-lg text-slate-600 hover:bg-white hover:text-brand-600 hover:shadow-xs active:scale-95 transition">
+          <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M15 19l-7-7 7-7" />
+          </svg>
+        </button>
+
+        <div class="relative flex items-center px-2">
+          <input id="monthPicker" type="month" aria-label="選擇月份" class="bg-transparent text-sm sm:text-base font-bold text-slate-700 focus:outline-none cursor-pointer text-center" />
+        </div>
+
+        <button id="nextMonthBtn" type="button" aria-label="下個月" class="p-2 rounded-lg text-slate-600 hover:bg-white hover:text-brand-600 hover:shadow-xs active:scale-95 transition">
+          <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7" />
+          </svg>
+        </button>
+      </div>
+
+      <!-- 回到本月按鈕 & 備份選單觸發 -->
+      <div class="flex items-center gap-1.5">
+        <button id="todayMonthBtn" type="button" class="text-xs font-medium px-2.5 py-2 rounded-xl bg-brand-50 text-brand-700 hover:bg-brand-100 active:scale-95 transition">
+          本月
+        </button>
+        <button id="toggleToolsBtn" type="button" aria-label="資料管理" title="資料備份與管理" class="p-2 rounded-xl text-slate-500 hover:bg-slate-100 hover:text-slate-700 active:scale-95 transition">
+          <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4" />
+          </svg>
+        </button>
+      </div>
+    </div>
+
+    <!-- 可收合的資料備份/匯入工具列 -->
+    <div id="toolsDrawer" class="hidden border-t border-slate-200 bg-slate-50/95">
+      <div class="max-w-3xl mx-auto px-4 py-3 flex flex-wrap items-center justify-between gap-2 text-xs">
+        <span class="text-slate-500">資料皆自動儲存於此裝置瀏覽器中：</span>
+        <div class="flex flex-wrap items-center gap-2">
+          <button id="exportCsvMonthBtn" type="button" class="px-3 py-1.5 rounded-lg bg-emerald-50 border border-emerald-200 text-emerald-700 font-medium hover:bg-emerald-100 transition cursor-pointer">
+            匯出本月 CSV
+          </button>
+          <button id="exportCsvAllBtn" type="button" class="px-3 py-1.5 rounded-lg bg-emerald-50 border border-emerald-200 text-emerald-700 font-medium hover:bg-emerald-100 transition cursor-pointer">
+            匯出全部 CSV
+          </button>
+          <label class="px-3 py-1.5 rounded-lg bg-sky-50 border border-sky-200 text-sky-700 font-medium hover:bg-sky-100 transition cursor-pointer">
+            從 CSV 匯入
+            <input id="importCsvInput" type="file" accept=".csv,text/csv" class="hidden" />
+          </label>
+          <button id="exportJsonBtn" type="button" class="px-3 py-1.5 rounded-lg bg-white border border-slate-200 text-slate-700 font-medium hover:bg-slate-100 transition cursor-pointer">
+            匯出備份 (JSON)
+          </button>
+          <label class="px-3 py-1.5 rounded-lg bg-white border border-slate-200 text-slate-700 font-medium hover:bg-slate-100 transition cursor-pointer">
+            匯入備份
+            <input id="importJsonInput" type="file" accept=".json,application/json" class="hidden" />
+          </label>
+          <button id="resetDemoBtn" type="button" class="px-3 py-1.5 rounded-lg bg-amber-50 border border-amber-200 text-amber-700 font-medium hover:bg-amber-100 transition cursor-pointer">
+            載入範例資料
+          </button>
+        </div>
+      </div>
+
+      <!-- 匯入結果與格式錯誤行號報告面板 (預設隱藏) -->
+      <div id="importReportBox" class="hidden max-w-3xl mx-auto px-4 pb-3">
+        <div class="p-3 rounded-xl bg-white border border-slate-200 shadow-2xs text-xs space-y-1.5">
+          <div class="flex items-center justify-between">
+            <span id="importReportTitle" class="font-bold text-slate-800">匯入結果摘要</span>
+            <button id="closeImportReportBtn" type="button" class="text-slate-400 hover:text-slate-600 px-1.5 py-0.5 rounded cursor-pointer">✕</button>
+          </div>
+          <p id="importReportSummary" class="text-slate-600"></p>
+          <ul id="importReportErrors" class="hidden max-h-28 overflow-y-auto space-y-1 pt-1.5 border-t border-slate-100 text-rose-600 font-medium"></ul>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <!-- 主要內容容器 -->
+  <main class="max-w-3xl mx-auto px-4 pt-5 space-y-5">
+
+    <!-- 1. 本月收支總覽儀表板 -->
+    <section aria-label="本月收支總覽" class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+      <!-- 本月結餘 -->
+      <div class="bg-gradient-to-br from-slate-800 to-slate-900 text-white rounded-2xl p-4 shadow-sm flex flex-col justify-between">
+        <div class="flex items-center justify-between">
+          <span class="text-xs font-medium text-slate-300">本月結餘</span>
+          <span id="balanceBadge" class="text-[11px] px-2 py-0.5 rounded-full bg-white/15 text-slate-200">收支平衡</span>
+        </div>
+        <div id="totalBalance" class="text-2xl sm:text-2xl font-bold tracking-tight mt-2 tabular-nums">$0</div>
+      </div>
+
+      <!-- 本月收入 & 本月支出 (手機版並排顯示) -->
+      <div class="grid grid-cols-2 sm:col-span-2 gap-3">
+        <!-- 本月收入 -->
+        <div class="bg-white rounded-2xl p-4 border border-slate-200/80 shadow-xs flex flex-col justify-between">
+          <div class="flex items-center gap-1.5">
+            <span class="w-2 h-2 rounded-full bg-emerald-500"></span>
+            <span class="text-xs font-medium text-slate-500">本月收入</span>
+          </div>
+          <div id="totalIncome" class="text-xl sm:text-2xl font-bold text-emerald-600 mt-2 tabular-nums">+$0</div>
+        </div>
+
+        <!-- 本月支出 -->
+        <div class="bg-white rounded-2xl p-4 border border-slate-200/80 shadow-xs flex flex-col justify-between">
+          <div class="flex items-center gap-1.5">
+            <span class="w-2 h-2 rounded-full bg-rose-500"></span>
+            <span class="text-xs font-medium text-slate-500">本月支出</span>
+          </div>
+          <div id="totalExpense" class="text-xl sm:text-2xl font-bold text-rose-600 mt-2 tabular-nums">-$0</div>
+        </div>
+      </div>
+
+      <!-- 每月預算進度與超支提醒卡片 -->
+      <div id="budgetCard" class="sm:col-span-3 bg-white rounded-2xl p-4 border border-slate-200/80 shadow-xs transition-colors">
+        <div class="flex flex-wrap items-center justify-between gap-2">
+          <div class="flex items-center gap-2">
+            <span class="text-xs font-bold text-slate-700">🎯 每月支出預算</span>
+            <span id="budgetStatusBadge" class="text-[11px] font-semibold px-2 py-0.5 rounded-full bg-slate-100 text-slate-500">未設定</span>
+          </div>
+          <button id="editBudgetBtn" type="button" class="text-xs font-semibold text-brand-600 hover:text-brand-700 bg-brand-50 hover:bg-brand-100 px-2.5 py-1 rounded-lg transition cursor-pointer">
+            設定預算
+          </button>
+        </div>
+
+        <!-- 預算進度顯示區 -->
+        <div id="budgetDisplayArea" class="mt-2.5">
+          <p class="text-xs text-slate-400">尚未設定每月支出上限，點擊右上角「設定預算」可開啟超支提醒。</p>
+        </div>
+
+        <!-- 預算金額編輯列 (預設隱藏) -->
+        <div id="budgetEditArea" class="hidden mt-3 pt-3 border-t border-slate-100 flex flex-wrap items-center gap-2">
+          <div class="relative flex-1 min-w-[140px]">
+            <span class="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 font-bold text-xs">$</span>
+            <input
+              type="number"
+              id="budgetInput"
+              inputmode="decimal"
+              min="0"
+              step="100"
+              placeholder="輸入每月預算上限（0 為關閉）"
+              class="w-full pl-7 pr-3 py-1.5 bg-slate-50 border border-slate-200 rounded-xl text-sm font-bold text-slate-800 focus:bg-white focus:outline-none focus:ring-2 focus:ring-brand-500 tabular-nums"
+            />
+          </div>
+          <button id="saveBudgetBtn" type="button" class="px-3.5 py-1.5 rounded-xl bg-brand-600 hover:bg-brand-700 text-white text-xs font-bold transition cursor-pointer">
+            儲存
+          </button>
+          <button id="cancelBudgetBtn" type="button" class="px-3 py-1.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-600 text-xs font-semibold transition cursor-pointer">
+            取消
+          </button>
+        </div>
+      </div>
+    </section>
+
+    <!-- 2. 新增收入/支出表單 -->
+    <section aria-label="新增記帳" class="bg-white rounded-2xl p-4 sm:p-5 border border-slate-200/80 shadow-xs">
+      <div class="flex items-center justify-between mb-4">
+        <h2 class="text-base font-bold text-slate-800 flex items-center gap-2">
+          <span>新增紀錄</span>
+        </h2>
+
+        <!-- 支出 / 收入 切換鈕 -->
+        <div class="grid grid-cols-2 bg-slate-100 p-1 rounded-xl w-44">
+          <button type="button" id="typeExpenseBtn" class="py-1.5 text-sm font-bold rounded-lg bg-rose-500 text-white shadow-xs transition">
+            支出
+          </button>
+          <button type="button" id="typeIncomeBtn" class="py-1.5 text-sm font-bold rounded-lg text-slate-600 hover:text-slate-900 transition">
+            收入
+          </button>
+        </div>
+      </div>
+
+      <form id="transactionForm" class="space-y-4" novalidate>
+        <input type="hidden" id="txType" value="expense" />
+
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
+          <!-- 金額輸入 -->
+          <div>
+            <label for="txAmount" class="block text-xs font-semibold text-slate-600 mb-1">金額 (TWD) <span class="text-rose-500">*</span></label>
+            <div class="relative">
+              <span class="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 font-bold text-base">$</span>
+              <input
+                type="number"
+                id="txAmount"
+                inputmode="decimal"
+                step="any"
+                min="0.01"
+                placeholder="0"
+                required
+                class="w-full pl-8 pr-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-lg font-bold text-slate-800 focus:bg-white focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-transparent transition tabular-nums"
+              />
+            </div>
+          </div>
+
+          <!-- 日期選擇 -->
+          <div>
+            <label for="txDate" class="block text-xs font-semibold text-slate-600 mb-1">日期 <span class="text-rose-500">*</span></label>
+            <input
+              type="date"
+              id="txDate"
+              required
+              class="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm font-medium text-slate-700 focus:bg-white focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-transparent transition"
+            />
+          </div>
+        </div>
+
+        <!-- 分類選擇 (點擊式按鈕群組，手機操作更直覺) -->
+        <div>
+          <label class="block text-xs font-semibold text-slate-600 mb-1.5">分類 <span class="text-rose-500">*</span></label>
+          <div id="categoryGrid" class="grid grid-cols-4 sm:grid-cols-4 gap-2">
+            <!-- 由 JS 動態渲染分類按鈕 -->
+          </div>
+          <input type="hidden" id="txCategory" required />
+        </div>
+
+        <!-- 備註輸入與送出按鈕 -->
+        <div class="flex flex-col sm:flex-row gap-3 pt-1">
+          <div class="flex-1">
+            <label for="txNote" class="sr-only">備註</label>
+            <input
+              type="text"
+              id="txNote"
+              placeholder="輸入備註（選填，例如：午餐便當、捷運儲值...）"
+              maxlength="60"
+              class="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm text-slate-700 focus:bg-white focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-transparent transition"
+            />
+          </div>
+          <button
+            type="submit"
+            id="submitBtn"
+            class="w-full sm:w-auto px-6 py-2.5 rounded-xl bg-rose-500 hover:bg-rose-600 text-white font-bold text-sm shadow-sm active:scale-95 transition flex items-center justify-center gap-1.5 cursor-pointer"
+          >
+            <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4" />
+            </svg>
+            <span>新增支出</span>
+          </button>
+        </div>
+      </form>
+    </section>
+
+    <!-- 3. 分類圖表統計 (圓餅圖 + 長條圖) -->
+    <section aria-label="分類統計圖表" class="bg-white rounded-2xl p-4 sm:p-5 border border-slate-200/80 shadow-xs">
+      <div class="flex flex-wrap items-center justify-between gap-2 mb-4">
+        <div>
+          <h2 class="text-base font-bold text-slate-800">分類統計分析</h2>
+          <p id="chartSubtitle" class="text-xs text-slate-400 mt-0.5">本月各項支出佔比</p>
+        </div>
+
+        <div class="flex items-center gap-2">
+          <!-- 圖表類型切換 (圓餅圖 / 長條圖) -->
+          <div class="inline-flex bg-slate-100 p-1 rounded-xl text-xs font-semibold">
+            <button type="button" id="viewPieBtn" class="px-2.5 py-1.5 rounded-lg bg-white text-brand-600 shadow-xs transition flex items-center gap-1">
+              <svg xmlns="http://www.w3.org/2000/svg" class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M11 3.055A9.001 9.001 0 1020.945 13H11V3.055z" />
+                <path stroke-linecap="round" stroke-linejoin="round" d="M20.488 9H15V3.512A9.025 9.025 0 0120.488 9z" />
+              </svg>
+              <span>圓餅圖</span>
+            </button>
+            <button type="button" id="viewBarBtn" class="px-2.5 py-1.5 rounded-lg text-slate-500 hover:text-slate-800 transition flex items-center gap-1">
+              <svg xmlns="http://www.w3.org/2000/svg" class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M4 6h16M4 12h10M4 18h14" />
+              </svg>
+              <span>長條圖</span>
+            </button>
+          </div>
+
+          <!-- 切換圖表顯示支出或收入 -->
+          <div class="inline-flex bg-slate-100 p-1 rounded-xl text-xs font-semibold">
+            <button type="button" id="chartExpenseTab" class="px-2.5 py-1.5 rounded-lg bg-white text-slate-800 shadow-xs transition">
+              支出
+            </button>
+            <button type="button" id="chartIncomeTab" class="px-2.5 py-1.5 rounded-lg text-slate-500 hover:text-slate-800 transition">
+              收入
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- 圖表內容容器 -->
+      <div id="categoryChartContainer">
+        <!-- 由 JS 動態生成圓餅圖或長條圖 -->
+      </div>
+    </section>
+
+    <!-- 4. 本月收支明細列表 -->
+    <section aria-label="本月收支明細" class="bg-white rounded-2xl p-4 sm:p-5 border border-slate-200/80 shadow-xs">
+      <div class="flex items-center justify-between mb-3">
+        <div class="flex items-center gap-2">
+          <h2 class="text-base font-bold text-slate-800">收支明細</h2>
+          <span id="txCountBadge" class="text-xs font-semibold px-2 py-0.5 rounded-full bg-slate-100 text-slate-600">0 筆</span>
+        </div>
+
+        <!-- 篩選器 -->
+        <select id="listFilterSelect" aria-label="篩選收支類型" class="text-xs font-medium bg-slate-50 border border-slate-200 rounded-lg px-2.5 py-1.5 text-slate-600 focus:outline-none focus:ring-2 focus:ring-brand-500">
+          <option value="all">全部顯示</option>
+          <option value="expense">僅看支出</option>
+          <option value="income">僅看收入</option>
+        </select>
+      </div>
+
+      <!-- 明細列表容器 -->
+      <div id="transactionList" class="divide-y divide-slate-100">
+        <!-- 由 JS 動態生成 -->
+      </div>
+    </section>
+
+  </main>
+
+  <!-- 輕量提示訊息 Toast -->
+  <div id="toast" role="status" aria-live="polite" class="fixed bottom-5 left-1/2 -translate-x-1/2 z-50 pointer-events-none opacity-0 translate-y-2 transition-all duration-200">
+    <div id="toastContent" class="px-4 py-2.5 rounded-xl bg-slate-800 text-white text-sm font-medium shadow-lg flex items-center gap-2">
+      <span id="toastMessage">已儲存</span>
+    </div>
+  </div>
+
+  <!-- 刪除確認對話框 (取代原生 confirm) -->
+  <div id="deleteModal" class="fixed inset-0 z-50 hidden items-center justify-center bg-slate-900/40 backdrop-blur-xs p-4">
+    <div class="bg-white rounded-2xl max-w-sm w-full p-5 shadow-xl border border-slate-100 animate-[fadeIn_0.15s_ease-out]">
+      <h3 class="text-base font-bold text-slate-800">確定要刪除這筆紀錄嗎？</h3>
+      <p id="deleteModalDesc" class="text-sm text-slate-500 mt-1.5">刪除後將無法復原，並會重新計算本月總額。</p>
+      <div class="flex items-center justify-end gap-2.5 mt-5">
+        <button id="cancelDeleteBtn" type="button" class="px-4 py-2 rounded-xl text-sm font-semibold text-slate-600 bg-slate-100 hover:bg-slate-200 transition">
+          取消
+        </button>
+        <button id="confirmDeleteBtn" type="button" class="px-4 py-2 rounded-xl text-sm font-semibold text-white bg-rose-500 hover:bg-rose-600 transition">
+          確定刪除
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    /**
+     * 日常記帳本核心邏輯
+     * 所有資料儲存於 localStorage，鍵名為 'daily_ledger_transactions_v1'
+     */
+    (function () {
+      const STORAGE_KEY = 'daily_ledger_transactions_v1';
+      const BUDGET_STORAGE_KEY = 'daily_ledger_monthly_budget_v1';
+
+      // 分類定義（包含圖示與長條圖代表色）
+      const CATEGORIES = {
+        expense: [
+          { id: 'food', name: '餐飲美食', icon: '🍱', color: '#f43f5e' },
+          { id: 'transport', name: '交通出行', icon: '🚇', color: '#f97316' },
+          { id: 'shopping', name: '購物消費', icon: '🛍️', color: '#ec4899' },
+          { id: 'home', name: '居家生活', icon: '🏠', color: '#8b5cf6' },
+          { id: 'entertainment', name: '娛樂休閒', icon: '🎮', color: '#0ea5e9' },
+          { id: 'health', name: '醫療保健', icon: '💊', color: '#14b8a6' },
+          { id: 'education', name: '學習進修', icon: '📚', color: '#6366f1' },
+          { id: 'other_exp', name: '其他支出', icon: '🧾', color: '#64748b' },
+        ],
+        income: [
+          { id: 'salary', name: '薪資獎金', icon: '💼', color: '#10b981' },
+          { id: 'invest', name: '投資理財', icon: '📈', color: '#0ea5e9' },
+          { id: 'parttime', name: '兼職副業', icon: '💻', color: '#8b5cf6' },
+          { id: 'gift', name: '紅包禮金', icon: '🧧', color: '#f59e0b' },
+          { id: 'other_inc', name: '其他收入', icon: '💰', color: '#64748b' },
+        ]
+      };
+
+      // 應用程式狀態
+      let transactions = [];
+      let monthlyBudget = 0;                 // 每月支出預算上限（0 代表未設定）
+      let currentMonth = getTodayMonthStr(); // 格式: YYYY-MM
+      let formType = 'expense';              // 'expense' | 'income'
+      let selectedCategory = 'food';
+      let chartType = 'expense';             // 'expense' | 'income'
+      let chartViewMode = 'pie';             // 'pie' | 'bar'
+      let activePieCatId = null;             // 目前點選/懸停突顯的圓餅圖分類
+      let listFilter = 'all';                // 'all' | 'expense' | 'income'
+      let pendingDeleteId = null;
+
+      // DOM 元素快取
+      const prevMonthBtn = document.getElementById('prevMonthBtn');
+      const nextMonthBtn = document.getElementById('nextMonthBtn');
+      const monthPicker = document.getElementById('monthPicker');
+      const todayMonthBtn = document.getElementById('todayMonthBtn');
+      const toggleToolsBtn = document.getElementById('toggleToolsBtn');
+      const toolsDrawer = document.getElementById('toolsDrawer');
+      const exportCsvMonthBtn = document.getElementById('exportCsvMonthBtn');
+      const exportCsvAllBtn = document.getElementById('exportCsvAllBtn');
+      const importCsvInput = document.getElementById('importCsvInput');
+      const exportJsonBtn = document.getElementById('exportJsonBtn');
+      const importJsonInput = document.getElementById('importJsonInput');
+      const resetDemoBtn = document.getElementById('resetDemoBtn');
+      const importReportBox = document.getElementById('importReportBox');
+      const importReportTitle = document.getElementById('importReportTitle');
+      const importReportSummary = document.getElementById('importReportSummary');
+      const importReportErrors = document.getElementById('importReportErrors');
+      const closeImportReportBtn = document.getElementById('closeImportReportBtn');
+
+      const totalBalanceEl = document.getElementById('totalBalance');
+      const balanceBadgeEl = document.getElementById('balanceBadge');
+      const totalIncomeEl = document.getElementById('totalIncome');
+      const totalExpenseEl = document.getElementById('totalExpense');
+
+      const budgetCard = document.getElementById('budgetCard');
+      const budgetStatusBadge = document.getElementById('budgetStatusBadge');
+      const editBudgetBtn = document.getElementById('editBudgetBtn');
+      const budgetDisplayArea = document.getElementById('budgetDisplayArea');
+      const budgetEditArea = document.getElementById('budgetEditArea');
+      const budgetInput = document.getElementById('budgetInput');
+      const saveBudgetBtn = document.getElementById('saveBudgetBtn');
+      const cancelBudgetBtn = document.getElementById('cancelBudgetBtn');
+
+      const typeExpenseBtn = document.getElementById('typeExpenseBtn');
+      const typeIncomeBtn = document.getElementById('typeIncomeBtn');
+      const transactionForm = document.getElementById('transactionForm');
+      const txTypeInput = document.getElementById('txType');
+      const txAmountInput = document.getElementById('txAmount');
+      const txDateInput = document.getElementById('txDate');
+      const categoryGrid = document.getElementById('categoryGrid');
+      const txCategoryInput = document.getElementById('txCategory');
+      const txNoteInput = document.getElementById('txNote');
+      const submitBtn = document.getElementById('submitBtn');
+
+      const viewPieBtn = document.getElementById('viewPieBtn');
+      const viewBarBtn = document.getElementById('viewBarBtn');
+      const chartExpenseTab = document.getElementById('chartExpenseTab');
+      const chartIncomeTab = document.getElementById('chartIncomeTab');
+      const chartSubtitle = document.getElementById('chartSubtitle');
+      const categoryChartContainer = document.getElementById('categoryChartContainer');
+
+      const txCountBadge = document.getElementById('txCountBadge');
+      const listFilterSelect = document.getElementById('listFilterSelect');
+      const transactionList = document.getElementById('transactionList');
+
+      const toastEl = document.getElementById('toast');
+      const toastMessageEl = document.getElementById('toastMessage');
+
+      const deleteModal = document.getElementById('deleteModal');
+      const deleteModalDesc = document.getElementById('deleteModalDesc');
+      const cancelDeleteBtn = document.getElementById('cancelDeleteBtn');
+      const confirmDeleteBtn = document.getElementById('confirmDeleteBtn');
+
+      // 取得今日日期字串 (YYYY-MM-DD)
+      function getTodayDateStr() {
+        const now = new Date();
+        const y = now.getFullYear();
+        const m = String(now.getMonth() + 1).padStart(2, '0');
+        const d = String(now.getDate()).padStart(2, '0');
+        return `${y}-${m}-${d}`;
+      }
+
+      // 取得今日月份字串 (YYYY-MM)
+      function getTodayMonthStr() {
+        return getTodayDateStr().slice(0, 7);
+      }
+
+      // 格式化金額（千分位）
+      function formatCurrency(num) {
+        return Number(num || 0).toLocaleString('zh-TW', {
+          minimumFractionDigits: 0,
+          maximumFractionDigits: 2
+        });
+      }
+
+      // 顯示提示訊息 Toast
+      let toastTimer = null;
+      function showToast(msg, isError = false) {
+        toastMessageEl.textContent = msg;
+        const container = toastEl.firstElementChild;
+        container.className = `px-4 py-2.5 rounded-xl text-white text-sm font-medium shadow-lg flex items-center gap-2 ${
+          isError ? 'bg-rose-600' : 'bg-slate-800'
+        }`;
+        toastEl.classList.remove('opacity-0', 'translate-y-2');
+        clearTimeout(toastTimer);
+        toastTimer = setTimeout(() => {
+          toastEl.classList.add('opacity-0', 'translate-y-2');
+        }, 2500);
+      }
+
+      // 從 localStorage 讀取資料
+      function loadTransactions() {
+        try {
+          const raw = localStorage.getItem(STORAGE_KEY);
+          if (raw) {
+            const parsed = JSON.parse(raw);
+            if (Array.isArray(parsed)) {
+              transactions = parsed;
+              return;
+            }
+          }
+          // 初次使用自動載入範例資料
+          transactions = createSampleData();
+          saveTransactions();
+        } catch (e) {
+          console.error('讀取 localStorage 失敗:', e);
+          transactions = [];
+        }
+      }
+
+      // 儲存資料至 localStorage
+      function saveTransactions() {
+        try {
+          localStorage.setItem(STORAGE_KEY, JSON.stringify(transactions));
+        } catch (e) {
+          console.error('寫入 localStorage 失敗:', e);
+          showToast('儲存失敗，瀏覽器儲存空間可能已滿', true);
+        }
+      }
+
+      // 讀取每月預算設定
+      function loadBudget() {
+        try {
+          const saved = localStorage.getItem(BUDGET_STORAGE_KEY);
+          const parsed = parseFloat(saved);
+          monthlyBudget = (!isNaN(parsed) && parsed > 0) ? parsed : 0;
+        } catch (e) {
+          monthlyBudget = 0;
+        }
+      }
+
+      // 儲存每月預算設定
+      function saveBudget(val) {
+        monthlyBudget = (!isNaN(val) && val > 0) ? Math.round(val * 100) / 100 : 0;
+        try {
+          localStorage.setItem(BUDGET_STORAGE_KEY, String(monthlyBudget));
+        } catch (e) {
+          console.error('儲存預算失敗:', e);
+        }
+      }
+
+      // 建立本月範例資料
+      function createSampleData() {
+        const ym = getTodayMonthStr();
+        const now = Date.now();
+        return [
+          { id: 'demo_1', type: 'income', amount: 48000, category: 'salary', date: `${ym}-05`, note: '本月薪資入帳', createdAt: now - 5000 },
+          { id: 'demo_2', type: 'expense', amount: 145, category: 'food', date: `${ym}-06`, note: '午餐便當與飲料', createdAt: now - 4000 },
+          { id: 'demo_3', type: 'expense', amount: 1200, category: 'transport', date: `${ym}-08`, note: 'TPASS 通勤月票', createdAt: now - 3000 },
+          { id: 'demo_4', type: 'expense', amount: 2380, category: 'shopping', date: `${ym}-10`, note: '日用品與生活採買', createdAt: now - 2000 },
+          { id: 'demo_5', type: 'expense', amount: 520, category: 'entertainment', date: `${ym}-12`, note: '週末電影票', createdAt: now - 1000 }
+        ];
+      }
+
+      // 查詢分類完整資訊
+      function getCategoryMeta(type, catId) {
+        const list = CATEGORIES[type] || [];
+        return list.find(c => c.id === catId) || { id: catId, name: '未分類', icon: '📌', color: '#94a3b8' };
+      }
+
+      // 設定目前檢視月份
+      function setMonth(ym) {
+        currentMonth = ym;
+        monthPicker.value = ym;
+        activePieCatId = null;
+        renderAll();
+      }
+
+      // 增減月份 (-1 或 +1)
+      function shiftMonth(delta) {
+        const [y, m] = currentMonth.split('-').map(Number);
+        const d = new Date(y, m - 1 + delta, 1);
+        const newYm = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
+        setMonth(newYm);
+      }
+
+      // 篩選目前月份的交易紀錄並依日期由新到舊排序
+      function getMonthTransactions() {
+        return transactions
+          .filter(tx => typeof tx.date === 'string' && tx.date.startsWith(currentMonth))
+          .sort((a, b) => {
+            if (b.date !== a.date) return b.date.localeCompare(a.date);
+            return (b.createdAt || 0) - (a.createdAt || 0);
+          });
+      }
+
+      // 切換新增表單的支出/收入模式
+      function setFormType(type) {
+        formType = type;
+        txTypeInput.value = type;
+
+        if (type === 'expense') {
+          typeExpenseBtn.className = 'py-1.5 text-sm font-bold rounded-lg bg-rose-500 text-white shadow-xs transition cursor-pointer';
+          typeIncomeBtn.className = 'py-1.5 text-sm font-bold rounded-lg text-slate-600 hover:text-slate-900 transition cursor-pointer';
+          submitBtn.className = 'w-full sm:w-auto px-6 py-2.5 rounded-xl bg-rose-500 hover:bg-rose-600 text-white font-bold text-sm shadow-sm active:scale-95 transition flex items-center justify-center gap-1.5 cursor-pointer';
+          submitBtn.querySelector('span').textContent = '新增支出';
+        } else {
+          typeIncomeBtn.className = 'py-1.5 text-sm font-bold rounded-lg bg-emerald-500 text-white shadow-xs transition cursor-pointer';
+          typeExpenseBtn.className = 'py-1.5 text-sm font-bold rounded-lg text-slate-600 hover:text-slate-900 transition cursor-pointer';
+          submitBtn.className = 'w-full sm:w-auto px-6 py-2.5 rounded-xl bg-emerald-500 hover:bg-emerald-600 text-white font-bold text-sm shadow-sm active:scale-95 transition flex items-center justify-center gap-1.5 cursor-pointer';
+          submitBtn.querySelector('span').textContent = '新增收入';
+        }
+
+        const list = CATEGORIES[type];
+        selectedCategory = list[0].id;
+        renderCategoryGrid();
+      }
+
+      // 渲染表單內的分類按鈕群組
+      function renderCategoryGrid() {
+        const list = CATEGORIES[formType];
+        txCategoryInput.value = selectedCategory;
+
+        categoryGrid.innerHTML = list.map(cat => {
+          const isSelected = cat.id === selectedCategory;
+          const activeStyle = formType === 'expense'
+            ? 'bg-rose-50 border-rose-500 text-rose-700 ring-1 ring-rose-500'
+            : 'bg-emerald-50 border-emerald-500 text-emerald-700 ring-1 ring-emerald-500';
+
+          return `
+            <button
+              type="button"
+              data-cat-id="${cat.id}"
+              class="cat-select-btn flex flex-col items-center justify-center p-2.5 rounded-xl border text-center transition active:scale-95 cursor-pointer ${
+                isSelected
+                  ? activeStyle
+                  : 'bg-slate-50/80 border-slate-200/80 text-slate-600 hover:bg-slate-100'
+              }"
+            >
+              <span class="text-xl leading-none mb-1">${cat.icon}</span>
+              <span class="text-xs font-semibold truncate w-full">${cat.name}</span>
+            </button>
+          `;
+        }).join('');
+
+        categoryGrid.querySelectorAll('.cat-select-btn').forEach(btn => {
+          btn.addEventListener('click', () => {
+            selectedCategory = btn.getAttribute('data-cat-id');
+            renderCategoryGrid();
+          });
+        });
+      }
+
+      // 渲染本月收入、支出與結餘儀表板
+      function renderSummary(monthTx) {
+        let income = 0;
+        let expense = 0;
+
+        monthTx.forEach(tx => {
+          const amt = Number(tx.amount) || 0;
+          if (tx.type === 'income') income += amt;
+          else expense += amt;
+        });
+
+        const balance = income - expense;
+
+        totalIncomeEl.textContent = `+$${formatCurrency(income)}`;
+        totalExpenseEl.textContent = `-$${formatCurrency(expense)}`;
+
+        if (balance > 0) {
+          totalBalanceEl.textContent = `+$${formatCurrency(balance)}`;
+          balanceBadgeEl.textContent = '本月盈餘';
+          balanceBadgeEl.className = 'text-[11px] px-2 py-0.5 rounded-full bg-emerald-500/25 text-emerald-200 font-medium';
+        } else if (balance < 0) {
+          totalBalanceEl.textContent = `-$${formatCurrency(Math.abs(balance))}`;
+          balanceBadgeEl.textContent = '支出超額';
+          balanceBadgeEl.className = 'text-[11px] px-2 py-0.5 rounded-full bg-rose-500/30 text-rose-200 font-medium';
+        } else {
+          totalBalanceEl.textContent = '$0';
+          balanceBadgeEl.textContent = '收支平衡';
+          balanceBadgeEl.className = 'text-[11px] px-2 py-0.5 rounded-full bg-white/15 text-slate-200';
+        }
+
+        renderBudgetStatus(expense);
+      }
+
+      // 渲染每月預算進度條與超支警告
+      function renderBudgetStatus(monthExpense) {
+        if (!monthlyBudget || monthlyBudget <= 0) {
+          budgetCard.className = 'sm:col-span-3 bg-white rounded-2xl p-4 border border-slate-200/80 shadow-xs transition-colors';
+          budgetStatusBadge.textContent = '未設定';
+          budgetStatusBadge.className = 'text-[11px] font-semibold px-2 py-0.5 rounded-full bg-slate-100 text-slate-500';
+          editBudgetBtn.textContent = '設定預算';
+          budgetDisplayArea.innerHTML = `<p class="text-xs text-slate-400">尚未設定每月支出上限，點擊右上角「設定預算」可開啟超支提醒。</p>`;
+          return;
+        }
+
+        editBudgetBtn.textContent = '修改預算';
+        const usedRatio = (monthExpense / monthlyBudget) * 100;
+        const barWidth = Math.min(usedRatio, 100);
+        const diff = monthlyBudget - monthExpense;
+
+        if (diff < 0) {
+          // 已超支狀態
+          budgetCard.className = 'sm:col-span-3 bg-rose-50/80 rounded-2xl p-4 border border-rose-300 shadow-xs transition-colors';
+          budgetStatusBadge.textContent = `⚠️ 已超支 $${formatCurrency(Math.abs(diff))}`;
+          budgetStatusBadge.className = 'text-[11px] font-bold px-2.5 py-0.5 rounded-full bg-rose-500 text-white animate-pulse';
+          budgetDisplayArea.innerHTML = `
+            <div class="flex items-center justify-between text-xs mb-1.5">
+              <span class="font-semibold text-rose-700">已使用 ${usedRatio.toFixed(1)}%（超出預算上限）</span>
+              <span class="font-bold text-slate-700 tabular-nums">$${formatCurrency(monthExpense)} / $${formatCurrency(monthlyBudget)}</span>
+            </div>
+            <div class="w-full h-2.5 bg-rose-200/70 rounded-full overflow-hidden">
+              <div class="h-full bg-rose-500 rounded-full transition-all duration-500" style="width: 100%;"></div>
+            </div>
+          `;
+        } else if (usedRatio >= 80) {
+          // 接近預算上限（80% ~ 100%）
+          budgetCard.className = 'sm:col-span-3 bg-amber-50/60 rounded-2xl p-4 border border-amber-300 shadow-xs transition-colors';
+          budgetStatusBadge.textContent = `⚡ 剩餘 $${formatCurrency(diff)}`;
+          budgetStatusBadge.className = 'text-[11px] font-bold px-2.5 py-0.5 rounded-full bg-amber-500 text-white';
+          budgetDisplayArea.innerHTML = `
+            <div class="flex items-center justify-between text-xs mb-1.5">
+              <span class="font-semibold text-amber-800">已使用 ${usedRatio.toFixed(1)}%（即將達到預算上限）</span>
+              <span class="font-bold text-slate-700 tabular-nums">$${formatCurrency(monthExpense)} / $${formatCurrency(monthlyBudget)}</span>
+            </div>
+            <div class="w-full h-2.5 bg-amber-200/70 rounded-full overflow-hidden">
+              <div class="h-full bg-amber-500 rounded-full transition-all duration-500" style="width: ${barWidth}%;"></div>
+            </div>
+          `;
+        } else {
+          // 預算充裕（< 80%）
+          budgetCard.className = 'sm:col-span-3 bg-white rounded-2xl p-4 border border-slate-200/80 shadow-xs transition-colors';
+          budgetStatusBadge.textContent = `剩餘 $${formatCurrency(diff)}`;
+          budgetStatusBadge.className = 'text-[11px] font-semibold px-2.5 py-0.5 rounded-full bg-emerald-50 text-emerald-700';
+          budgetDisplayArea.innerHTML = `
+            <div class="flex items-center justify-between text-xs mb-1.5">
+              <span class="font-medium text-slate-500">已使用 ${usedRatio.toFixed(1)}%</span>
+              <span class="font-bold text-slate-700 tabular-nums">$${formatCurrency(monthExpense)} / $${formatCurrency(monthlyBudget)}</span>
+            </div>
+            <div class="w-full h-2.5 bg-slate-100 rounded-full overflow-hidden">
+              <div class="h-full bg-emerald-500 rounded-full transition-all duration-500" style="width: ${barWidth}%;"></div>
+            </div>
+          `;
+        }
+      }
+
+      // 渲染分類圖表（圓餅圖 / 長條圖）
+      function renderCategoryChart(monthTx) {
+        const filtered = monthTx.filter(tx => tx.type === chartType);
+        const total = filtered.reduce((sum, tx) => sum + (Number(tx.amount) || 0), 0);
+
+        chartSubtitle.textContent = chartType === 'expense'
+          ? `本月總支出 $${formatCurrency(total)} 的分類佔比`
+          : `本月總收入 $${formatCurrency(total)} 的分類佔比`;
+
+        if (filtered.length === 0 || total <= 0) {
+          activePieCatId = null;
+          categoryChartContainer.innerHTML = `
+            <div class="py-8 text-center text-slate-400 text-sm bg-slate-50/70 rounded-xl border border-dashed border-slate-200">
+              本月尚無${chartType === 'expense' ? '支出' : '收入'}資料可繪製圖表
+            </div>
+          `;
+          return;
+        }
+
+        // 依分類加總金額
+        const groupMap = {};
+        filtered.forEach(tx => {
+          const catId = tx.category;
+          groupMap[catId] = (groupMap[catId] || 0) + (Number(tx.amount) || 0);
+        });
+
+        // 轉換為陣列並由高到低排序
+        const sortedGroups = Object.entries(groupMap)
+          .map(([catId, amount]) => ({
+            catId,
+            meta: getCategoryMeta(chartType, catId),
+            amount,
+            percent: (amount / total) * 100
+          }))
+          .sort((a, b) => b.amount - a.amount);
+
+        // 確保 activePieCatId 仍存在於目前資料中
+        if (activePieCatId && !sortedGroups.some(g => g.catId === activePieCatId)) {
+          activePieCatId = null;
+        }
+
+        if (chartViewMode === 'pie') {
+          renderDonutChart(sortedGroups, total);
+        } else {
+          renderBarChart(sortedGroups);
+        }
+      }
+
+      // 繪製純 SVG 互動式環形圓餅圖 (Donut Chart)
+      function renderDonutChart(sortedGroups, total) {
+        const size = 220;
+        const center = size / 2;
+        const radius = 78;
+        const strokeWidth = 30;
+        const circumference = 2 * Math.PI * radius;
+
+        let accumulatedPercent = 0;
+        const slicesSvg = sortedGroups.map(item => {
+          const fraction = item.amount / total;
+          const dashLength = fraction * circumference;
+          // 多個分類時保留極小間隙提升層次感
+          const gap = sortedGroups.length > 1 ? 2.5 : 0;
+          const visibleDash = Math.max(dashLength - gap, 0.5);
+          const rotation = accumulatedPercent * 360 - 90;
+          accumulatedPercent += fraction;
+
+          const isSelected = activePieCatId === item.catId;
+          const isDimmed = activePieCatId && !isSelected;
+
+          return `
+            <circle
+              cx="${center}"
+              cy="${center}"
+              r="${radius}"
+              fill="transparent"
+              stroke="${item.meta.color}"
+              stroke-width="${isSelected ? strokeWidth + 6 : strokeWidth}"
+              stroke-dasharray="${visibleDash} ${circumference}"
+              transform="rotate(${rotation} ${center} ${center})"
+              data-pie-cat="${item.catId}"
+              class="pie-slice cursor-pointer transition-all duration-300"
+              style="opacity: ${isDimmed ? 0.35 : 1};"
+            />
+          `;
+        }).join('');
+
+        // 決定圓餅圖中央顯示的資訊（預設顯示總額，點選分類時顯示該分類詳情）
+        const focusedItem = sortedGroups.find(g => g.catId === activePieCatId);
+        const centerTopLabel = focusedItem
+          ? `${focusedItem.meta.icon} ${focusedItem.meta.name}`
+          : (chartType === 'expense' ? '本月總支出' : '本月總收入');
+        const centerMainValue = focusedItem
+          ? `$${formatCurrency(focusedItem.amount)}`
+          : `$${formatCurrency(total)}`;
+        const centerSubLabel = focusedItem
+          ? `佔比 ${focusedItem.percent < 1 ? '<1%' : focusedItem.percent.toFixed(1) + '%'}`
+          : `共 ${sortedGroups.length} 個分類`;
+
+        // 產生互動式圖例清單
+        const legendHtml = sortedGroups.map(item => {
+          const pctText = item.percent < 1 ? '<1%' : `${item.percent.toFixed(1)}%`;
+          const isSelected = activePieCatId === item.catId;
+          return `
+            <button
+              type="button"
+              data-pie-cat="${item.catId}"
+              class="pie-legend-btn w-full flex items-center justify-between p-2 rounded-xl border text-left transition active:scale-[0.99] ${
+                isSelected
+                  ? 'bg-slate-100/90 border-slate-300 shadow-2xs'
+                  : 'bg-slate-50/60 border-transparent hover:bg-slate-100/70'
+              }"
+            >
+              <div class="flex items-center gap-2 min-w-0">
+                <span class="w-3 h-3 rounded-full shrink-0" style="background-color: ${item.meta.color};"></span>
+                <span class="text-sm shrink-0">${item.meta.icon}</span>
+                <span class="text-xs sm:text-sm font-semibold text-slate-700 truncate">${item.meta.name}</span>
+              </div>
+              <div class="flex items-center gap-2 shrink-0 ml-2">
+                <span class="text-xs font-medium text-slate-400 tabular-nums">${pctText}</span>
+                <span class="text-xs sm:text-sm font-bold text-slate-800 tabular-nums">$${formatCurrency(item.amount)}</span>
+              </div>
+            </button>
+          `;
+        }).join('');
+
+        categoryChartContainer.innerHTML = `
+          <div class="flex flex-col sm:flex-row items-center gap-5 pt-1">
+            <!-- SVG 環形圓餅圖 -->
+            <div class="relative w-[220px] h-[220px] shrink-0 flex items-center justify-center">
+              <svg viewBox="0 0 ${size} ${size}" class="w-full h-full overflow-visible">
+                <!-- 底圈軌道 -->
+                <circle
+                  cx="${center}"
+                  cy="${center}"
+                  r="${radius}"
+                  fill="transparent"
+                  stroke="#f1f5f9"
+                  stroke-width="${strokeWidth}"
+                />
+                ${slicesSvg}
+              </svg>
+              <!-- 圓餅圖中央摘要文字 -->
+              <div id="pieCenterInfo" class="absolute inset-0 flex flex-col items-center justify-center pointer-events-none px-6 text-center">
+                <span class="text-xs font-medium text-slate-500 truncate max-w-full">${centerTopLabel}</span>
+                <span class="text-lg font-bold text-slate-800 tabular-nums mt-0.5 leading-tight">${centerMainValue}</span>
+                <span class="text-[11px] font-semibold text-brand-600 mt-0.5">${centerSubLabel}</span>
+              </div>
+            </div>
+
+            <!-- 右側 / 下方圖例明細 -->
+            <div class="w-full flex-1 space-y-1.5 max-h-[240px] overflow-y-auto pr-0.5">
+              ${legendHtml}
+              <p class="text-[11px] text-slate-400 text-right pt-1">點擊扇形或圖例可查看單項明細</p>
+            </div>
+          </div>
+        `;
+
+        // 綁定圓餅圖扇形與圖例的點擊/觸控突顯互動
+        categoryChartContainer.querySelectorAll('[data-pie-cat]').forEach(el => {
+          el.addEventListener('click', () => {
+            const clickedCat = el.getAttribute('data-pie-cat');
+            activePieCatId = (activePieCatId === clickedCat) ? null : clickedCat;
+            renderDonutChart(sortedGroups, total);
+          });
+        });
+      }
+
+      // 繪製分類長條圖
+      function renderBarChart(sortedGroups) {
+        categoryChartContainer.innerHTML = `
+          <div class="space-y-3.5">
+            ${sortedGroups.map(item => {
+              const pctText = item.percent < 1 ? '<1%' : `${item.percent.toFixed(1)}%`;
+              return `
+                <div class="space-y-1.5">
+                  <div class="flex items-center justify-between text-xs sm:text-sm">
+                    <div class="flex items-center gap-2 font-semibold text-slate-700">
+                      <span class="text-base">${item.meta.icon}</span>
+                      <span>${item.meta.name}</span>
+                      <span class="text-xs font-normal text-slate-400">${pctText}</span>
+                    </div>
+                    <div class="font-bold text-slate-800 tabular-nums">$${formatCurrency(item.amount)}</div>
+                  </div>
+                  <div class="w-full h-2.5 bg-slate-100 rounded-full overflow-hidden">
+                    <div
+                      class="h-full rounded-full transition-all duration-500 ease-out"
+                      style="width: ${Math.max(item.percent, 2)}%; background-color: ${item.meta.color};"
+                    ></div>
+                  </div>
+                </div>
+              `;
+            }).join('')}
+          </div>
+        `;
+      }
+
+      // 渲染本月收支明細列表
+      function renderTransactionList(monthTx) {
+        const visibleTx = listFilter === 'all'
+          ? monthTx
+          : monthTx.filter(tx => tx.type === listFilter);
+
+        txCountBadge.textContent = `${visibleTx.length} 筆`;
+
+        if (visibleTx.length === 0) {
+          transactionList.innerHTML = `
+            <div class="py-10 text-center">
+              <div class="text-3xl mb-2">📝</div>
+              <p class="text-sm font-medium text-slate-500">這個月份還沒有符合的記帳紀錄</p>
+              <p class="text-xs text-slate-400 mt-1">在上方表單輸入金額即可快速新增一筆！</p>
+            </div>
+          `;
+          return;
+        }
+
+        transactionList.innerHTML = visibleTx.map(tx => {
+          const meta = getCategoryMeta(tx.type, tx.category);
+          const isExpense = tx.type === 'expense';
+          const amountPrefix = isExpense ? '-' : '+';
+          const amountColor = isExpense ? 'text-rose-600' : 'text-emerald-600';
+          const dateLabel = tx.date.slice(5).replace('-', '/'); // 顯示 MM/DD
+          const safeNote = escapeHtml(tx.note || '');
+
+          return `
+            <div class="py-3 flex items-center justify-between gap-3 group hover:bg-slate-50/80 -mx-2 px-2 rounded-xl transition">
+              <div class="flex items-center gap-3 min-w-0">
+                <div class="w-10 h-10 rounded-xl bg-slate-100 flex items-center justify-center text-xl shrink-0">
+                  ${meta.icon}
+                </div>
+                <div class="min-w-0">
+                  <div class="flex items-center gap-2">
+                    <span class="text-sm font-bold text-slate-800 truncate">${meta.name}</span>
+                    <span class="text-[11px] font-medium text-slate-400 bg-slate-100 px-1.5 py-0.5 rounded-md shrink-0">${dateLabel}</span>
+                  </div>
+                  <p class="text-xs text-slate-500 truncate mt-0.5">
+                    ${safeNote ? safeNote : '<span class="text-slate-300">無備註</span>'}
+                  </p>
+                </div>
+              </div>
+
+              <div class="flex items-center gap-2.5 shrink-0">
+                <span class="text-sm sm:text-base font-bold tabular-nums ${amountColor}">
+                  ${amountPrefix}$${formatCurrency(tx.amount)}
+                </span>
+                <button
+                  type="button"
+                  data-delete-id="${tx.id}"
+                  aria-label="刪除此筆紀錄"
+                  title="刪除紀錄"
+                  class="delete-tx-btn p-2 rounded-lg text-slate-400 hover:text-rose-600 hover:bg-rose-50 active:scale-90 transition"
+                >
+                  <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                  </svg>
+                </button>
+              </div>
+            </div>
+          `;
+        }).join('');
+
+        // 綁定刪除按鈕事件
+        transactionList.querySelectorAll('.delete-tx-btn').forEach(btn => {
+          btn.addEventListener('click', () => {
+            const id = btn.getAttribute('data-delete-id');
+            openDeleteModal(id);
+          });
+        });
+      }
+
+      // 防 XSS 跳脫字元
+      function escapeHtml(str) {
+        return str
+          .replace(/&/g, '&amp;')
+          .replace(/</g, '&lt;')
+          .replace(/>/g, '&gt;')
+          .replace(/"/g, '&quot;')
+          .replace(/'/g, '&#039;');
+      }
+
+      // 打開刪除確認對話框
+      function openDeleteModal(id) {
+        const target = transactions.find(t => t.id === id);
+        if (!target) return;
+        pendingDeleteId = id;
+        const meta = getCategoryMeta(target.type, target.category);
+        const sign = target.type === 'expense' ? '支出' : '收入';
+        deleteModalDesc.textContent = `即將刪除「${target.date} ${meta.name} (${sign} $${formatCurrency(target.amount)})」，刪除後無法復原。`;
+        deleteModal.classList.remove('hidden');
+        deleteModal.classList.add('flex');
+      }
+
+      // 關閉刪除確認對話框
+      function closeDeleteModal() {
+        pendingDeleteId = null;
+        deleteModal.classList.add('hidden');
+        deleteModal.classList.remove('flex');
+      }
+
+      // 執行刪除
+      function executeDelete() {
+        if (!pendingDeleteId) return;
+        transactions = transactions.filter(t => t.id !== pendingDeleteId);
+        saveTransactions();
+        closeDeleteModal();
+        renderAll();
+        showToast('已刪除該筆紀錄');
+      }
+
+      // 全面重新渲染畫面
+      function renderAll() {
+        const monthTx = getMonthTransactions();
+        renderSummary(monthTx);
+        renderCategoryChart(monthTx);
+        renderTransactionList(monthTx);
+      }
+
+      // 將紀錄陣列轉換並下載為 CSV（含 UTF-8 BOM 防止 Excel 亂碼）
+      function exportTransactionsToCsv(scope) {
+        const targetList = scope === 'month'
+          ? getMonthTransactions()
+          : [...transactions].sort((a, b) => {
+              if (b.date !== a.date) return b.date.localeCompare(a.date);
+              return (b.createdAt || 0) - (a.createdAt || 0);
+            });
+
+        if (targetList.length === 0) {
+          showToast(scope === 'month' ? `${currentMonth} 尚無紀錄可匯出` : '目前沒有任何紀錄可匯出', true);
+          return;
+        }
+
+        const escapeCsvCell = (val) => {
+          const str = String(val ?? '');
+          if (/[",\r\n]/.test(str)) {
+            return `"${str.replace(/"/g, '""')}"`;
+          }
+          return str;
+        };
+
+        const headers = ['日期', '收支類型', '分類', '金額', '備註'];
+        const rows = targetList.map(tx => {
+          const meta = getCategoryMeta(tx.type, tx.category);
+          const typeLabel = tx.type === 'expense' ? '支出' : '收入';
+          const signedAmount = tx.type === 'expense' ? -Math.abs(Number(tx.amount) || 0) : Math.abs(Number(tx.amount) || 0);
+          return [
+            tx.date,
+            typeLabel,
+            meta.name,
+            signedAmount,
+            tx.note || ''
+          ].map(escapeCsvCell).join(',');
+        });
+
+        const csvContent = '\uFEFF' + [headers.join(','), ...rows].join('\r\n');
+        const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        const fileTag = scope === 'month' ? currentMonth : `全部紀錄_${getTodayDateStr()}`;
+        a.href = url;
+        a.download = `日常記帳_${fileTag}.csv`;
+        a.click();
+        URL.revokeObjectURL(url);
+
+        showToast(`已匯出${scope === 'month' ? ` ${currentMonth} ` : '全部'}共 ${targetList.length} 筆 CSV`);
+      }
+
+      // 產生紀錄比對指紋（用於判斷是否為重複紀錄）
+      function buildTxFingerprint(tx) {
+        const amt = Math.round(Math.abs(Number(tx.amount) || 0) * 100) / 100;
+        const note = String(tx.note || '').trim();
+        return `${tx.date}|${tx.type}|${tx.category}|${amt}|${note}`;
+      }
+
+      // 依據分類名稱或 ID 反查分類 ID
+      function resolveCategoryId(type, rawCat) {
+        const list = CATEGORIES[type] || [];
+        const clean = String(rawCat || '').trim();
+        const found = list.find(c => c.id === clean || c.name === clean);
+        if (found) return found.id;
+        return type === 'expense' ? 'other_exp' : 'other_inc';
+      }
+
+      // 解析支援雙引號與換行的 RFC 4180 CSV 文字，並保留每列的原始行號
+      function parseCsvRowsWithLineNumbers(text) {
+        const cleanText = text.replace(/^\uFEFF/, '');
+        const records = [];
+        let row = [];
+        let field = '';
+        let inQuotes = false;
+        let lineNum = 1;
+        let rowStartLine = 1;
+
+        for (let i = 0; i < cleanText.length; i++) {
+          const ch = cleanText[i];
+          const next = cleanText[i + 1];
+
+          if (inQuotes) {
+            if (ch === '"' && next === '"') {
+              field += '"';
+              i++;
+            } else if (ch === '"') {
+              inQuotes = false;
+            } else {
+              if (ch === '\n') lineNum++;
+              field += ch;
+            }
+          } else {
+            if (ch === '"') {
+              inQuotes = true;
+            } else if (ch === ',') {
+              row.push(field);
+              field = '';
+            } else if (ch === '\r' && next === '\n') {
+              row.push(field);
+              records.push({ line: rowStartLine, cells: row });
+              row = [];
+              field = '';
+              i++;
+              lineNum++;
+              rowStartLine = lineNum;
+            } else if (ch === '\n' || ch === '\r') {
+              row.push(field);
+              records.push({ line: rowStartLine, cells: row });
+              row = [];
+              field = '';
+              lineNum++;
+              rowStartLine = lineNum;
+            } else {
+              field += ch;
+            }
+          }
+        }
+
+        if (field.length > 0 || row.length > 0) {
+          row.push(field);
+          records.push({ line: rowStartLine, cells: row });
+        }
+        return records;
+      }
+
+      // 驗證並正規化日期字串 (支援 YYYY-MM-DD 或 YYYY/M/D)
+      function normalizeCsvDate(rawDate) {
+        const s = String(rawDate || '').trim();
+        const match = s.match(/^(\d{4})[-/](\d{1,2})[-/](\d{1,2})$/);
+        if (!match) return null;
+        const y = Number(match[1]);
+        const m = Number(match[2]);
+        const d = Number(match[3]);
+        const dt = new Date(y, m - 1, d);
+        if (dt.getFullYear() !== y || dt.getMonth() !== m - 1 || dt.getDate() !== d) return null;
+        return `${y}-${String(m).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
+      }
+
+      // 顯示匯入摘要與格式錯誤行號列表
+      function showImportReport(title, importedCount, skippedCount, errorList) {
+        importReportBox.classList.remove('hidden');
+        importReportTitle.textContent = title;
+        importReportSummary.innerHTML = `
+          成功匯入 <strong class="text-emerald-600">${importedCount}</strong> 筆，
+          略過重複 <strong class="text-amber-600">${skippedCount}</strong> 筆，
+          格式不符 <strong class="text-rose-600">${errorList.length}</strong> 列。
+        `;
+
+        if (errorList.length > 0) {
+          importReportErrors.classList.remove('hidden');
+          importReportErrors.innerHTML = errorList
+            .map(err => `<li>• 第 ${err.line} 行：${escapeHtml(err.reason)}</li>`)
+            .join('');
+        } else {
+          importReportErrors.classList.add('hidden');
+          importReportErrors.innerHTML = '';
+        }
+      }
+
+      // 處理 CSV 檔案匯入
+      function handleCsvImport(csvText) {
+        const records = parseCsvRowsWithLineNumbers(csvText)
+          .filter(r => r.cells.some(c => c.trim() !== ''));
+
+        if (records.length === 0) {
+          showToast('CSV 檔案內容為空', true);
+          return;
+        }
+
+        // 若首列為標題列（例如包含「日期」或「金額」）則自動略過
+        let startIndex = 0;
+        const firstRowJoined = records[0].cells.join('');
+        if (/日期|金額|收支|類型|date|amount/i.test(firstRowJoined)) {
+          startIndex = 1;
+        }
+
+        const existingFingerprints = new Set(transactions.map(buildTxFingerprint));
+        const newItems = [];
+        const errors = [];
+        let skippedCount = 0;
+
+        for (let i = startIndex; i < records.length; i++) {
+          const { line, cells } = records[i];
+          if (cells.length < 4) {
+            errors.push({ line, reason: `欄位數量不足（至少需 4 欄：日期,收支類型,分類,金額，目前僅 ${cells.length} 欄）` });
+            continue;
+          }
+
+          const [rawDate, rawType, rawCat, rawAmount, rawNote = ''] = cells;
+          const dateVal = normalizeCsvDate(rawDate);
+          if (!dateVal) {
+            errors.push({ line, reason: `日期格式不符「${rawDate.trim()}」（請使用 YYYY-MM-DD）` });
+            continue;
+          }
+
+          const typeStr = rawType.trim().toLowerCase();
+          let typeVal = null;
+          if (typeStr === '支出' || typeStr === 'expense') typeVal = 'expense';
+          else if (typeStr === '收入' || typeStr === 'income') typeVal = 'income';
+          if (!typeVal) {
+            errors.push({ line, reason: `收支類型不符「${rawType.trim()}」（僅支援「支出」或「收入」）` });
+            continue;
+          }
+
+          const cleanedAmtStr = rawAmount.trim().replace(/[$,\s]/g, '');
+          const parsedAmt = parseFloat(cleanedAmtStr);
+          if (isNaN(parsedAmt) || parsedAmt === 0) {
+            errors.push({ line, reason: `金額格式不符「${rawAmount.trim()}」（需為非零數字）` });
+            continue;
+          }
+
+          const absAmount = Math.round(Math.abs(parsedAmt) * 100) / 100;
+          const catId = resolveCategoryId(typeVal, rawCat);
+          const noteVal = rawNote.trim().slice(0, 60);
+
+          const candidate = {
+            id: 'tx_' + Date.now() + '_' + Math.random().toString(36).slice(2, 7) + '_' + i,
+            type: typeVal,
+            amount: absAmount,
+            category: catId,
+            date: dateVal,
+            note: noteVal,
+            createdAt: Date.now() + i
+          };
+
+          const fp = buildTxFingerprint(candidate);
+          if (existingFingerprints.has(fp)) {
+            skippedCount++;
+            continue;
+          }
+
+          existingFingerprints.add(fp);
+          newItems.push(candidate);
+        }
+
+        if (newItems.length > 0) {
+          transactions = [...newItems, ...transactions];
+          saveTransactions();
+          renderAll();
+        }
+
+        showImportReport('CSV 匯入完成報告', newItems.length, skippedCount, errors);
+        showToast(
+          errors.length > 0
+            ? `匯入 ${newItems.length} 筆，有 ${errors.length} 列格式不符`
+            : `CSV 匯入完成：新增 ${newItems.length} 筆，略過重複 ${skippedCount} 筆`,
+          errors.length > 0
+        );
+      }
+
+      // 綁定所有事件監聽器
+      function bindEvents() {
+        // 月份切換
+        prevMonthBtn.addEventListener('click', () => shiftMonth(-1));
+        nextMonthBtn.addEventListener('click', () => shiftMonth(1));
+        todayMonthBtn.addEventListener('click', () => setMonth(getTodayMonthStr()));
+        monthPicker.addEventListener('change', (e) => {
+          if (e.target.value) setMonth(e.target.value);
+        });
+
+        // 備份工具抽屜
+        toggleToolsBtn.addEventListener('click', () => {
+          toolsDrawer.classList.toggle('hidden');
+        });
+
+        // 匯出 CSV（本月 / 全部）
+        exportCsvMonthBtn.addEventListener('click', () => exportTransactionsToCsv('month'));
+        exportCsvAllBtn.addEventListener('click', () => exportTransactionsToCsv('all'));
+
+        // 關閉匯入結果報告面板
+        closeImportReportBtn.addEventListener('click', () => {
+          importReportBox.classList.add('hidden');
+        });
+
+        // 從 CSV 匯入
+        importCsvInput.addEventListener('change', (e) => {
+          const file = e.target.files[0];
+          if (!file) return;
+          const reader = new FileReader();
+          reader.onload = (evt) => {
+            handleCsvImport(String(evt.target.result || ''));
+            importCsvInput.value = '';
+          };
+          reader.readAsText(file, 'UTF-8');
+        });
+
+        // 匯出 JSON
+        exportJsonBtn.addEventListener('click', () => {
+          const dataStr = JSON.stringify(transactions, null, 2);
+          const blob = new Blob([dataStr], { type: 'application/json' });
+          const url = URL.createObjectURL(blob);
+          const a = document.createElement('a');
+          a.href = url;
+          a.download = `日常記帳備份_${getTodayDateStr()}.json`;
+          a.click();
+          URL.revokeObjectURL(url);
+          showToast('已匯出 JSON 備份檔');
+        });
+
+        // 匯入 JSON 備份（略過重複紀錄並驗證格式）
+        importJsonInput.addEventListener('change', (e) => {
+          const file = e.target.files[0];
+          if (!file) return;
+          const reader = new FileReader();
+          reader.onload = (evt) => {
+            try {
+              const imported = JSON.parse(evt.target.result);
+              if (!Array.isArray(imported)) throw new Error('格式錯誤');
+
+              const existingIds = new Set(transactions.map(t => t.id));
+              const existingFingerprints = new Set(transactions.map(buildTxFingerprint));
+              const validNewItems = [];
+              const errors = [];
+              let skippedCount = 0;
+
+              imported.forEach((item, idx) => {
+                const rowNum = idx + 1;
+                if (!item || typeof item !== 'object') {
+                  errors.push({ line: rowNum, reason: '項目不是有效的 JSON 物件' });
+                  return;
+                }
+                const dateVal = normalizeCsvDate(item.date);
+                const typeVal = (item.type === 'expense' || item.type === 'income') ? item.type : null;
+                const amt = parseFloat(item.amount);
+                if (!dateVal || !typeVal || isNaN(amt) || amt <= 0) {
+                  errors.push({ line: rowNum, reason: '缺少有效的日期、收支類型或正數金額' });
+                  return;
+                }
+
+                const normalizedItem = {
+                  id: item.id || ('tx_' + Date.now() + '_' + Math.random().toString(36).slice(2, 7) + '_' + idx),
+                  type: typeVal,
+                  amount: Math.round(amt * 100) / 100,
+                  category: resolveCategoryId(typeVal, item.category),
+                  date: dateVal,
+                  note: String(item.note || '').trim().slice(0, 60),
+                  createdAt: item.createdAt || Date.now()
+                };
+
+                const fp = buildTxFingerprint(normalizedItem);
+                if ((item.id && existingIds.has(item.id)) || existingFingerprints.has(fp)) {
+                  skippedCount++;
+                  return;
+                }
+
+                existingIds.add(normalizedItem.id);
+                existingFingerprints.add(fp);
+                validNewItems.push(normalizedItem);
+              });
+
+              if (validNewItems.length > 0) {
+                transactions = [...validNewItems, ...transactions];
+                saveTransactions();
+                renderAll();
+              }
+
+              showImportReport('JSON 備份匯入報告', validNewItems.length, skippedCount, errors);
+              showToast(`備份匯入完成：新增 ${validNewItems.length} 筆，略過重複 ${skippedCount} 筆`);
+            } catch (err) {
+              showToast('匯入失敗：JSON 檔案格式不正確', true);
+            }
+            importJsonInput.value = '';
+          };
+          reader.readAsText(file, 'UTF-8');
+        });
+
+        // 匯入 JSON
+        importJsonInput.addEventListener('change', (e) => {
+          const file = e.target.files[0];
+          if (!file) return;
+          const reader = new FileReader();
+          reader.onload = (evt) => {
+            try {
+              const imported = JSON.parse(evt.target.result);
+              if (!Array.isArray(imported)) throw new Error('格式錯誤');
+              transactions = imported;
+              saveTransactions();
+              renderAll();
+              showToast(`成功匯入 ${imported.length} 筆紀錄`);
+            } catch (err) {
+              showToast('匯入失敗：檔案格式不正確', true);
+            }
+            importJsonInput.value = '';
+          };
+          reader.readAsText(file);
+        });
+
+        // 載入範例資料
+        resetDemoBtn.addEventListener('click', () => {
+          const samples = createSampleData();
+          transactions = [...samples, ...transactions];
+          saveTransactions();
+          setMonth(getTodayMonthStr());
+          showToast('已加入本月範例資料');
+        });
+
+        // 表單支出/收入切換
+        typeExpenseBtn.addEventListener('click', () => setFormType('expense'));
+        typeIncomeBtn.addEventListener('click', () => setFormType('income'));
+
+        // 每月預算設定互動
+        editBudgetBtn.addEventListener('click', () => {
+          budgetInput.value = monthlyBudget > 0 ? monthlyBudget : '';
+          budgetEditArea.classList.remove('hidden');
+          budgetInput.focus();
+        });
+
+        cancelBudgetBtn.addEventListener('click', () => {
+          budgetEditArea.classList.add('hidden');
+        });
+
+        saveBudgetBtn.addEventListener('click', () => {
+          const val = parseFloat(budgetInput.value);
+          if (budgetInput.value.trim() !== '' && (isNaN(val) || val < 0)) {
+            showToast('請輸入有效的預算金額', true);
+            return;
+          }
+          saveBudget(isNaN(val) ? 0 : val);
+          budgetEditArea.classList.add('hidden');
+          renderAll();
+          showToast(monthlyBudget > 0 ? `已設定每月預算 $${formatCurrency(monthlyBudget)}` : '已清除每月預算上限');
+        });
+
+        budgetInput.addEventListener('keydown', (e) => {
+          if (e.key === 'Enter') {
+            e.preventDefault();
+            saveBudgetBtn.click();
+          }
+        });
+
+        // 新增紀錄表單送出
+        transactionForm.addEventListener('submit', (e) => {
+          e.preventDefault();
+
+          const amount = parseFloat(txAmountInput.value);
+          if (isNaN(amount) || amount <= 0) {
+            showToast('請輸入大於 0 的有效金額', true);
+            txAmountInput.focus();
+            return;
+          }
+
+          const dateVal = txDateInput.value || getTodayDateStr();
+          const noteVal = txNoteInput.value.trim();
+
+          const newTx = {
+            id: 'tx_' + Date.now() + '_' + Math.random().toString(36).slice(2, 6),
+            type: formType,
+            amount: Math.round(amount * 100) / 100,
+            category: selectedCategory,
+            date: dateVal,
+            note: noteVal,
+            createdAt: Date.now()
+          };
+
+          transactions.unshift(newTx);
+          saveTransactions();
+
+          // 清空金額與備註，方便連續記帳
+          txAmountInput.value = '';
+          txNoteInput.value = '';
+
+          // 同步圖表檢視頁籤為剛新增的類型，並切換到該紀錄所屬月份
+          chartType = formType;
+          activePieCatId = null;
+          updateChartTabs();
+          const targetMonth = dateVal.slice(0, 7);
+          setMonth(targetMonth);
+
+          // 若新增的是支出且設有預算，檢查是否達到預警或超支門檻
+          if (newTx.type === 'expense' && monthlyBudget > 0) {
+            const monthTotalExpense = transactions
+              .filter(t => t.type === 'expense' && typeof t.date === 'string' && t.date.startsWith(targetMonth))
+              .reduce((sum, t) => sum + (Number(t.amount) || 0), 0);
+
+            if (monthTotalExpense > monthlyBudget) {
+              const overAmt = monthTotalExpense - monthlyBudget;
+              showToast(`⚠️ 提醒：${targetMonth} 支出已超支 $${formatCurrency(overAmt)}！`, true);
+              return;
+            } else if (monthTotalExpense >= monthlyBudget * 0.8) {
+              const pct = ((monthTotalExpense / monthlyBudget) * 100).toFixed(0);
+              showToast(`⚡ 注意：${targetMonth} 預算已使用 ${pct}%`, false);
+              return;
+            }
+          }
+
+          showToast(`已新增${formType === 'expense' ? '支出' : '收入'} $${formatCurrency(newTx.amount)}`);
+        });
+
+        // 圖表模式切換（圓餅圖 / 長條圖）
+        viewPieBtn.addEventListener('click', () => {
+          chartViewMode = 'pie';
+          updateChartViewButtons();
+          renderCategoryChart(getMonthTransactions());
+        });
+
+        viewBarBtn.addEventListener('click', () => {
+          chartViewMode = 'bar';
+          updateChartViewButtons();
+          renderCategoryChart(getMonthTransactions());
+        });
+
+        // 圖表 支出/收入 頁籤切換
+        chartExpenseTab.addEventListener('click', () => {
+          chartType = 'expense';
+          activePieCatId = null;
+          updateChartTabs();
+          renderCategoryChart(getMonthTransactions());
+        });
+
+        chartIncomeTab.addEventListener('click', () => {
+          chartType = 'income';
+          activePieCatId = null;
+          updateChartTabs();
+          renderCategoryChart(getMonthTransactions());
+        });
+
+        // 明細列表篩選器與刪除確認對話框事件
+        listFilterSelect.addEventListener('change', (e) => {
+          listFilter = e.target.value;
+          renderTransactionList(getMonthTransactions());
+        });
+
+        cancelDeleteBtn.addEventListener('click', closeDeleteModal);
+        confirmDeleteBtn.addEventListener('click', executeDelete);
+        deleteModal.addEventListener('click', (e) => {
+          if (e.target === deleteModal) closeDeleteModal();
+        });
+      }
+
+      function updateChartViewButtons() {
+        if (chartViewMode === 'pie') {
+          viewPieBtn.className = 'px-2.5 py-1.5 rounded-lg bg-white text-brand-600 shadow-xs transition flex items-center gap-1';
+          viewBarBtn.className = 'px-2.5 py-1.5 rounded-lg text-slate-500 hover:text-slate-800 transition flex items-center gap-1';
+        } else {
+          viewBarBtn.className = 'px-2.5 py-1.5 rounded-lg bg-white text-brand-600 shadow-xs transition flex items-center gap-1';
+          viewPieBtn.className = 'px-2.5 py-1.5 rounded-lg text-slate-500 hover:text-slate-800 transition flex items-center gap-1';
+        }
+      }
+
+      function updateChartTabs() {
+        if (chartType === 'expense') {
+          chartExpenseTab.className = 'px-2.5 py-1.5 rounded-lg bg-white text-slate-800 shadow-xs transition';
+          chartIncomeTab.className = 'px-2.5 py-1.5 rounded-lg text-slate-500 hover:text-slate-800 transition';
+        } else {
+          chartIncomeTab.className = 'px-2.5 py-1.5 rounded-lg bg-white text-slate-800 shadow-xs transition';
+          chartExpenseTab.className = 'px-2.5 py-1.5 rounded-lg text-slate-500 hover:text-slate-800 transition';
+        }
+      }
+
+      // 初始化應用程式
+      function init() {
+        loadTransactions();
+        loadBudget();
+        txDateInput.value = getTodayDateStr();
+        monthPicker.value = currentMonth;
+        setFormType('expense');
+        bindEvents();
+        renderAll();
+      }
+
+      init();
+    })();
+  </script>
+</body>
+</html>
